@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "TeamSSHClient": {
+      "commandName": "Project",
+      "commandLineArgs": "local"
+    }
+  }
+}

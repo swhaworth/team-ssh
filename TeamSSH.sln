@@ -1,0 +1,37 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.16
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TeamSSHWebService", "TeamSSHWebService\TeamSSHWebService.csproj", "{CE8F4676-AAE5-411D-B019-DFFE0FEE150D}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TeamSSHClient", "TeamSSHClient\TeamSSHClient.csproj", "{49D20EF4-AC67-4C8E-8EE9-37081C85D800}"
+	ProjectSection(ProjectDependencies) = postProject
+		{6CEE58BF-5256-40FF-8E11-56141325B54B} = {6CEE58BF-5256-40FF-8E11-56141325B54B}
+	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "TeamSSHLibrary", "TeamSSHLibrary\TeamSSHLibrary.csproj", "{6CEE58BF-5256-40FF-8E11-56141325B54B}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{CE8F4676-AAE5-411D-B019-DFFE0FEE150D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{CE8F4676-AAE5-411D-B019-DFFE0FEE150D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{CE8F4676-AAE5-411D-B019-DFFE0FEE150D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{CE8F4676-AAE5-411D-B019-DFFE0FEE150D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{49D20EF4-AC67-4C8E-8EE9-37081C85D800}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{49D20EF4-AC67-4C8E-8EE9-37081C85D800}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{49D20EF4-AC67-4C8E-8EE9-37081C85D800}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{49D20EF4-AC67-4C8E-8EE9-37081C85D800}.Release|Any CPU.Build.0 = Release|Any CPU
+		{6CEE58BF-5256-40FF-8E11-56141325B54B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{6CEE58BF-5256-40FF-8E11-56141325B54B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{6CEE58BF-5256-40FF-8E11-56141325B54B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{6CEE58BF-5256-40FF-8E11-56141325B54B}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+EndGlobal
