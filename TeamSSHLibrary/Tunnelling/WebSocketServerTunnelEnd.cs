@@ -47,18 +47,18 @@ namespace TeamSSHLibrary.Tunnelling
                 {
                     if (!socket.Connect(this.Uri, cancel, this.Logger, this.LogPrefix(this.Name)))
                     {
-                        cancel.WaitHandle.WaitOne(TimeSpan.FromSeconds(1));
+                        cancel.WaitHandle.WaitOne(TimeSpan.FromSeconds(10));
                         continue;
                     }
                     if (!socket.SendJson(new { Id = 1, Type = "Server" }, cancel, this.Logger, this.LogPrefix(this.Name)))
                     {
-                        cancel.WaitHandle.WaitOne(TimeSpan.FromSeconds(1));
+                        cancel.WaitHandle.WaitOne(TimeSpan.FromSeconds(10));
                         continue;
                     }
                     var connectionObject = socket.ReceiveJson(cancel, this.Logger, this.LogPrefix(this.Name));
                     if (connectionObject == null)
                     {
-                        cancel.WaitHandle.WaitOne(TimeSpan.FromSeconds(1));
+                        cancel.WaitHandle.WaitOne(TimeSpan.FromSeconds(10));
                         continue;
                     }
                     var thisEnd = new WebSocketClientTunnelEnd(this.Logger, this.Name, socket, this.Cancel);

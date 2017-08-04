@@ -20,10 +20,15 @@ namespace TeamSSHLibrary.Extensions
                 var connectTask = socket.ConnectAsync(uri, cancel).ContinueWithEvent(connectTaskEvent);
                 while (!cancel.IsCancellationRequested)
                 {
-                    if (connectTask.IsCompleted)
+                    if(connectTask.IsFaulted)
                     {
-                        logger?.LogInformation(logPrefix + $"Connected websocket {socket.State} {socket.SubProtocol}.");
-                        return true;
+                        logger?.LogError(0, connectTask.Exception, logPrefix + "Exception");
+                        return false;
+                    }
+                    else if (connectTask.IsCompleted)
+                    {
+                        logger?.LogInformation(logPrefix + $"Connected websocket {socket.CloseStatusDescription} {socket.State} {socket.SubProtocol}.");
+                        return (socket.State == WebSocketState.Open);
                     }
                     var waitResult = WaitHandle.WaitAny(new WaitHandle[] { cancel.WaitHandle, connectTaskEvent }, TimeSpan.FromSeconds(0.1));
                     if (waitResult == 0)
