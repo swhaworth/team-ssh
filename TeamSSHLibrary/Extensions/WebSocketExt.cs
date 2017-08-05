@@ -22,7 +22,7 @@ namespace TeamSSHLibrary.Extensions
                 {
                     if(connectTask.IsFaulted)
                     {
-                        logger?.LogError(0, connectTask.Exception, logPrefix + "Exception");
+                        logger?.LogError(0, connectTask.Exception, logPrefix + "Exception Connecting WebSocket");
                         return false;
                     }
                     else if (connectTask.IsCompleted)

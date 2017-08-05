@@ -6,6 +6,19 @@ namespace TeamSSHLibrary.Helpers
     {
         #region Public Methods
 
+        public static bool Wrap(Action action)
+        {
+            try
+            {
+                action();
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+        
         public static bool WrapObjectDisposedException(Action action)
         {
             try

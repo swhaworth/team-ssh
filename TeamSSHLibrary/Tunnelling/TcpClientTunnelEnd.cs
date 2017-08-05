@@ -56,15 +56,16 @@ namespace TeamSSHLibrary.Tunnelling
                 {
                     using (var connectTaskEvent = new AutoResetEvent(false))
                     {
-                        var connectTask = default(Task);
                         this.Client = new TcpClient();
+                        var connectTask = this.Client.ConnectAsync(IPAddress.Parse(this.HostName), this.Port).ContinueWithEvent(connectTaskEvent);
                         while (!cancel.IsCancellationRequested)
                         {
-                            if (connectTask == null)
+                            if(connectTask.IsFaulted)
                             {
-                                connectTask = this.Client.ConnectAsync(IPAddress.Parse(this.HostName), this.Port).ContinueWithEvent(connectTaskEvent);
+                                this.Logger?.LogError(0, connectTask.Exception, this.LogPrefix(this.Name) + "Exception Connecting TCP End");
+                                return;
                             }
-                            if (connectTask.IsCompleted)
+                            else if (connectTask.IsCompleted)
                             {
                                 this.Logger?.LogInformation(this.LogPrefix(this.Name) + $"Connected from {this.Client.Client.LocalEndPoint} to {this.Client.Client.RemoteEndPoint}");
                                 break;
