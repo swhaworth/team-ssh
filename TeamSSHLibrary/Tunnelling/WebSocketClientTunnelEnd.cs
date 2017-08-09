@@ -18,8 +18,9 @@ namespace TeamSSHLibrary.Tunnelling
             this.Socket = socket;
         }
 
-        public WebSocketClientTunnelEnd(ILogger logger, string name, Uri uri, CancellationToken cancel) : base(logger, name, cancel)
+        public WebSocketClientTunnelEnd(ILogger logger, string name, Uri uri, int id, CancellationToken cancel) : base(logger, name, cancel)
         {
+            this.Id = id;
             this.Uri = uri;
         }
 
@@ -27,6 +28,7 @@ namespace TeamSSHLibrary.Tunnelling
 
         #region Properties
 
+        public int Id { get; }
         public WebSocket Socket { get; private set; }
         public Uri Uri { get; }
 
@@ -58,7 +60,7 @@ namespace TeamSSHLibrary.Tunnelling
                     {
                         return;
                     }
-                    if (!this.Socket.SendJson(new { Id = 1, Type = "Client" }, cancel, this.Logger, this.LogPrefix(this.Name)))
+                    if (!this.Socket.SendJson(new { Id = this.Id, Type = "Client" }, cancel, this.Logger, this.LogPrefix(this.Name)))
                     {
                         return;
                     }

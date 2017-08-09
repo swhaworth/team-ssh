@@ -1,4 +1,6 @@
 ﻿using System;
+using System.Globalization;
+using System.Linq;
 using System.Net;
 using System.Threading;
 using Microsoft.Extensions.Logging;
@@ -31,9 +33,9 @@ namespace TeamSSHClient
             try
             {
                 var serverEnd = default(BaseTunnelEnd);
-                var clientMode = Program.GetMode(ClientMode.Client);
+                var clientMode = Program.GetMode(ClientMode.Client, 1);
                 logger.LogInformation($"Starting with mode {clientMode}.");
-                switch (clientMode)
+                switch (clientMode.Mode)
                 {
                     case ClientMode.Local:
                         serverEnd = new TcpServerTunnelEnd(logger, "Server", IPAddress.Any, 10022, _cancel.Token)
@@ -44,11 +46,11 @@ namespace TeamSSHClient
                     case ClientMode.Client:
                         serverEnd = new TcpServerTunnelEnd(logger, "Server", IPAddress.Any, 10022, _cancel.Token)
                         {
-                            CreateOtherEnd = (c) => new WebSocketClientTunnelEnd(logger, "WS", new Uri("ws://authenticatorwebservice.azurewebsites.net/teamssh"), _cancel.Token)
+                            CreateOtherEnd = (c) => new WebSocketClientTunnelEnd(logger, "WS", new Uri("ws://authenticatorwebservice.azurewebsites.net/teamssh"), clientMode.Id, _cancel.Token)
                         };
                         break;
                     case ClientMode.Server:
-                        serverEnd = new WebSocketServerTunnelEnd(logger, "WSServ", new Uri("ws://authenticatorwebservice.azurewebsites.net/teamssh"), _cancel.Token)
+                        serverEnd = new WebSocketServerTunnelEnd(logger, "WSServ", new Uri("ws://authenticatorwebservice.azurewebsites.net/teamssh"), clientMode.Id, _cancel.Token)
                         {
                             CreateOtherEnd = (s) => new TcpClientTunnelEnd(logger, "SSH", "127.0.0.1", 22, _cancel.Token)
                         };
@@ -78,16 +80,21 @@ namespace TeamSSHClient
             _cancel.Cancel();
         }
 
-        private static ClientMode GetMode(ClientMode defaultMode)
+        private static (ClientMode Mode, int Id) GetMode(ClientMode defaultMode, int defaultId)
         {
-            foreach (var arg in Program.Arguments)
+            for (var c = 0; c < Program.Arguments.Length; ++c)
             {
-                if (Enum.TryParse<ClientMode>(arg, true, out var mode))
+                if (Enum.TryParse<ClientMode>(Program.Arguments[c], true, out var mode))
                 {
-                    return mode;
+                    var nextArgument = Program.Arguments.ElementAtOrDefault(c + 1);
+                    if (!string.IsNullOrEmpty(nextArgument) && int.TryParse(nextArgument, NumberStyles.Integer, CultureInfo.CurrentCulture, out var id))
+                    {
+                        return (mode, id);
+                    }
+                    return (mode, defaultId);
                 }
             }
-            return defaultMode;
+            return (defaultMode, defaultId);
         }
 
         #endregion

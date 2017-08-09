@@ -11,8 +11,9 @@ namespace TeamSSHLibrary.Tunnelling
     {
         #region Ctors
 
-        public WebSocketServerTunnelEnd(ILogger logger, string name, Uri uri, CancellationToken cancel) : base(logger, name, cancel)
+        public WebSocketServerTunnelEnd(ILogger logger, string name, Uri uri, int id, CancellationToken cancel) : base(logger, name, cancel)
         {
+            this.Id = id;
             this.Uri = uri;
         }
 
@@ -21,6 +22,7 @@ namespace TeamSSHLibrary.Tunnelling
         #region Properties
 
         public Func<WebSocket, BaseTunnelEnd> CreateOtherEnd { get; set; }
+        public int Id { get; }
         public Uri Uri { get; }
 
         #endregion        
@@ -50,7 +52,7 @@ namespace TeamSSHLibrary.Tunnelling
                         cancel.WaitHandle.WaitOne(TimeSpan.FromSeconds(10));
                         continue;
                     }
-                    if (!socket.SendJson(new { Id = 1, Type = "Server" }, cancel, this.Logger, this.LogPrefix(this.Name)))
+                    if (!socket.SendJson(new { Id = this.Id, Type = "Server" }, cancel, this.Logger, this.LogPrefix(this.Name)))
                     {
                         cancel.WaitHandle.WaitOne(TimeSpan.FromSeconds(10));
                         continue;
