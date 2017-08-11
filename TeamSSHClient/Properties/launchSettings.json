@@ -2,7 +2,7 @@
   "profiles": {
     "TeamSSHClient": {
       "commandName": "Project",
-      "commandLineArgs": "local"
+      "commandLineArgs": "server"
     }
   }
 }

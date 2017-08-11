@@ -1,8 +1,9 @@
 ﻿using System;
-using System.Globalization;
+using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using TeamSSHLibrary.Tunnelling;
 
@@ -16,52 +17,77 @@ namespace TeamSSHClient
 
         #endregion
 
-        #region Properties
-
-        public static string[] Arguments { get; private set; }
-
-        #endregion
-
         #region Public Methods
 
         public static int Main(string[] args)
         {
-            Program.Arguments = args;
-            var loggerFactory = new LoggerFactory().AddConsole().AddDebug();
-            var logger = loggerFactory.CreateLogger("TeamSSHClient");
+            var arguments = new ArgumentHandler(args);
+            var configuration = ConfigurationFile.Load(arguments);
+            var loggerFactory = (ILoggerFactory)new LoggerFactory();
+            if (configuration.AddConsoleLogger)
+            {
+                loggerFactory = loggerFactory.AddConsole();
+            }
+            if (configuration.AddDebugLogger)
+            {
+                loggerFactory = loggerFactory.AddDebug();
+            }
+            var logger = loggerFactory.CreateLogger(configuration.LoggerCategoryName);
             Console.CancelKeyPress += Program.Console_CancelKeyPress;
             try
             {
-                var serverEnd = default(BaseTunnelEnd);
-                var clientMode = Program.GetMode(ClientMode.Client, 1);
-                logger.LogInformation($"Starting with mode {clientMode}.");
-                switch (clientMode.Mode)
+                var serverEnds = new List<BaseTunnelEnd>();
+                var executionMode = arguments.ExecutionMode;
+                logger.LogInformation($"Starting with mode {executionMode}.");
+                switch (executionMode)
                 {
                     case ClientMode.Local:
-                        serverEnd = new TcpServerTunnelEnd(logger, "Server", IPAddress.Any, 10022, _cancel.Token)
+                        serverEnds.Add(new TcpServerTunnelEnd(logger, "Server", IPAddress.Any, configuration.ServerPort, _cancel.Token)
                         {
-                            CreateOtherEnd = (c) => new TcpClientTunnelEnd(logger, "SSH", "127.0.0.1", 22, _cancel.Token)
-                        };
+                            CreateOtherEnd = (c) => new TcpClientTunnelEnd(logger, "SSH", configuration.LocalUri, configuration.LocalPort, _cancel.Token)
+                        });
                         break;
                     case ClientMode.Client:
-                        serverEnd = new TcpServerTunnelEnd(logger, "Server", IPAddress.Any, 10022, _cancel.Token)
+                        serverEnds.AddRange(configuration.Clients.Select((c) => new TcpServerTunnelEnd(logger, "Server", IPAddress.Any, c.LocalPort, _cancel.Token)
                         {
-                            CreateOtherEnd = (c) => new WebSocketClientTunnelEnd(logger, "WS", new Uri("ws://authenticatorwebservice.azurewebsites.net/teamssh"), clientMode.Id, _cancel.Token)
-                        };
+                            CreateOtherEnd = (_) => new WebSocketClientTunnelEnd(logger, "WS", new Uri(c.ServerUri), c.ConnectionId, _cancel.Token)
+                        }));
                         break;
                     case ClientMode.Server:
-                        serverEnd = new WebSocketServerTunnelEnd(logger, "WSServ", new Uri("ws://authenticatorwebservice.azurewebsites.net/teamssh"), clientMode.Id, _cancel.Token)
+                        serverEnds.AddRange(configuration.Servers.Select((s) => new WebSocketServerTunnelEnd(logger, "WSServ", new Uri(s.ServerUri), s.ConnectionId, _cancel.Token)
                         {
-                            CreateOtherEnd = (s) => new TcpClientTunnelEnd(logger, "SSH", "127.0.0.1", 22, _cancel.Token)
-                        };
+                            CreateOtherEnd = (_) => new TcpClientTunnelEnd(logger, "SSH", s.LocalUri, s.LocalPort, _cancel.Token)
+                        }));
                         break;
+                    case ClientMode.Add:
+                        configuration.AddClient(new ConfigurationItem
+                        {
+                            ConnectionId = arguments.GetIntArgument("--id", 1), LocalPort = arguments.GetIntArgument("--lport", 10022),
+                            ServerUri = arguments.GetStringArgument("--suri")
+                        });
+                        return 0;
+                    case ClientMode.Register:
+                        configuration.AddServer(new ConfigurationItem
+                        {
+                            ConnectionId = arguments.GetIntArgument("--id", 1), LocalPort = arguments.GetIntArgument("--lport", 22),
+                            LocalUri = arguments.GetStringArgument("--luri", IPAddress.Loopback.ToString()), ServerUri = arguments.GetStringArgument("--suri")
+                        });
+                        return 0;
+                    case ClientMode.Remove:
+                        configuration.RemoveClient(arguments.GetIntArgument("--id", 1));
+                        return 0;
+                    case ClientMode.Unregister:
+                        configuration.RemoveServer(arguments.GetIntArgument("--id", 1));
+                        return 0;
+                    case ClientMode.Help:
+                        return 0;
                 }
-                if (serverEnd == null)
+                if (!serverEnds.Any())
                 {
                     logger.LogError("Could not create tunnel end based on arguments.");
                     return -1;
                 }
-                serverEnd.Start().Wait();
+                Task.WaitAll(serverEnds.Select((e) => e.Start()).ToArray());
                 return 0;
             }
             catch (Exception ex)
@@ -78,23 +104,6 @@ namespace TeamSSHClient
         private static void Console_CancelKeyPress(object sender, ConsoleCancelEventArgs e)
         {
             _cancel.Cancel();
-        }
-
-        private static (ClientMode Mode, int Id) GetMode(ClientMode defaultMode, int defaultId)
-        {
-            for (var c = 0; c < Program.Arguments.Length; ++c)
-            {
-                if (Enum.TryParse<ClientMode>(Program.Arguments[c], true, out var mode))
-                {
-                    var nextArgument = Program.Arguments.ElementAtOrDefault(c + 1);
-                    if (!string.IsNullOrEmpty(nextArgument) && int.TryParse(nextArgument, NumberStyles.Integer, CultureInfo.CurrentCulture, out var id))
-                    {
-                        return (mode, id);
-                    }
-                    return (mode, defaultId);
-                }
-            }
-            return (defaultMode, defaultId);
         }
 
         #endregion

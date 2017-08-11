@@ -13,11 +13,29 @@ namespace TeamSSHWebService.Middleware
 {
     public class SshConnectionMiddleware
     {
+        #region Types
+
+        private sealed class SocketInfo
+        {
+            public SocketInfo(WebSocket socket, int id)
+            {
+                this.Connected = false;
+                this.Id = id;
+                this.Socket = socket;
+            }
+
+            public bool Connected { get; set; }
+            public int Id { get; }
+            public WebSocket Socket { get; }
+        }
+
+        #endregion
+
         #region Fields
 
         private readonly ILogger _logger;
         private readonly RequestDelegate _next;
-        private readonly IList<(WebSocket Socket, int Id)> _sockets = new List<(WebSocket, int)>();
+        private readonly IList<SocketInfo> _sockets = new List<SocketInfo>();
         private readonly object _socketsLock = new object();
 
         #endregion
@@ -70,12 +88,16 @@ namespace TeamSSHWebService.Middleware
 
         private void InvokeClient(WebSocket socket, int id, CancellationToken cancel)
         {
-            var serverSocket = default((WebSocket Socket, int Id));
+            var serverSocket = default(SocketInfo);
             lock (_socketsLock)
             {
-                serverSocket = _sockets.FirstOrDefault((s) => s.Id == id);
+                serverSocket = _sockets.FirstOrDefault((s) => (s.Id == id) && !s.Connected);
+                if (serverSocket != null)
+                {
+                    serverSocket.Connected = true;
+                }
             }
-            if (serverSocket.Socket == null)
+            if (serverSocket == null)
             {
                 _logger.LogInformation(this.LogPrefix() + $"Failed to find server for {id}.");
                 return;
@@ -87,12 +109,16 @@ namespace TeamSSHWebService.Middleware
             var serverEnd = new WebSocketClientTunnelEnd(_logger, "WSServer", serverSocket.Socket, cancel);
             clientEnd.Connect(serverEnd);
             Task.WaitAll(clientEnd.Start(), serverEnd.Start());
+            lock (_socketsLock)
+            {
+                serverSocket.Connected = false;
+            }
             _logger.LogInformation(this.LogPrefix() + $"Done tunnelling between websockets for {id}");
         }
 
         private void InvokeServer(WebSocket socket, int id, CancellationToken cancel)
         {
-            var socketInfo = (socket, id);
+            var socketInfo = new SocketInfo(socket, id);
             lock (_socketsLock)
             {
                 _sockets.Add(socketInfo);
